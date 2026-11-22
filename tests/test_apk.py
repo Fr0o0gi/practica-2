@@ -25,13 +25,15 @@ class ApkTests(unittest.TestCase):
     def test_signed_layout(self):
         """Читает две последовательные gzip-части Alpine."""
         buffer = BytesIO()
+        files = ((".SIGN", b"signature"), ("APKINDEX", INDEX.encode()))
         with tarfile.open(fileobj=buffer, mode="w") as archive:
-            for name, data in ((".SIGN", b"signature"), ("APKINDEX", INDEX.encode())):
+            for name, data in files:
                 member = tarfile.TarInfo(name)
                 member.size = len(data)
                 archive.addfile(member, BytesIO(data))
         contents = buffer.getvalue()
-        signed_parts = gzip.compress(contents[:1024]) + gzip.compress(contents[1024:])
+        signature, index = contents[:1024], contents[1024:]
+        signed_parts = gzip.compress(signature) + gzip.compress(index)
         self.assertEqual(read_index(signed_parts), INDEX)
 
     def test_real_package_names(self):

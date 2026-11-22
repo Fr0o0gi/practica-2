@@ -6,6 +6,8 @@ from gzip import GzipFile
 from io import BytesIO
 from urllib.request import urlopen
 
+from .config import PACKAGE_NAME
+
 
 INDEX_NAME = "APKINDEX.tar.gz"
 MAX_ARCHIVE_BYTES = 16 * 1024 * 1024
@@ -60,6 +62,8 @@ def package_records(index):
     for block in re.split(r"\r?\n[ \t]*\r?\n", index.strip()):
         fields = dict(line.split(":", 1) for line in block.splitlines())
         if "P" in fields and "V" in fields:
+            if not PACKAGE_NAME.fullmatch(fields["P"]):
+                raise ValueError(f"некорректное имя пакета: {fields['P']!r}")
             yield Package(
                 fields["P"], fields["V"], tuple(fields.get("D", "").split()),
                 tuple(fields.get("p", "").split()), int(fields.get("k", "0")),

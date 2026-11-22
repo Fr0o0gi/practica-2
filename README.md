@@ -70,3 +70,36 @@
 Штатный `apk` используется отдельно для сравнения. Скрипт
 `scripts/apk-reference.sh` запускается в Alpine 3.22 и печатает список
 `apk fetch -R --url` и граф `apk dot` для каждого пакета.
+
+## Этап 5. PlantUML, PNG и ASCII
+
+Нужны Java и [PlantUML JAR](https://github.com/plantuml/plantuml/releases).
+Положите JAR в `tools/plantuml.jar` или укажите путь в переменной
+окружения `PLANTUML_JAR`. Встроенный движок Smetana компонует граф.
+
+```powershell
+New-Item -ItemType Directory -Path tools -Force | Out-Null
+Invoke-WebRequest -Uri https://github.com/plantuml/plantuml/releases/download/v1.2026.10/plantuml-java8-1.2026.10.jar -OutFile tools/plantuml.jar
+.\run.bat examples/alpine.toml
+.\run.bat examples/jq.toml
+.\run.bat examples/zlib.toml
+```
+
+Команды сохраняют `curl.png`, `jq.png` и `zlib.png` в папке `output/`. Рядом
+записывается исходник диаграммы `*.puml`. При `ascii_tree = true`
+в терминале также выводится дерево с отметками циклов и общих зависимостей.
+Для локального графа без сети запустите `.un.bat examples/test.toml`.
+
+### Основные функции
+
+- `load_config` читает и проверяет настройки TOML.
+- `load_apk` загружает индекс, `ApkRepository.direct` находит зависимости.
+- `load_test_graph` читает тестовый граф из JSON.
+- `build_graph` строит граф итеративным DFS, `download_order` упорядочивает
+  вершины после обхода зависимостей.
+- `plantuml_text` строит диаграмму, `save_graph` записывает исходник и PNG.
+- `ascii_tree` строит текстовое дерево.
+
+Анализ охватывает один индекс APK v2. Программа разрешает зависимости
+и виртуальные имена из этого индекса. Штатный решатель APK дополнительно
+учитывает состояние системы, конфликты и правила автоматической установки.
