@@ -1,6 +1,7 @@
 # Граф зависимостей Alpine Linux
 
 Практическая работа №2 по конфигурационному управлению, вариант 23.
+Реализованы этапы 1, 2, 3 и 5.
 Для запуска нужен Python 3.11 или новее. Команды выполняются из корня
 репозитория.
 
@@ -53,3 +54,45 @@
 
 Формат тестового JSON — объект, где каждому имени A–Z соответствует
 массив прямых зависимостей. Каждая указанная буква должна быть объявлена.
+
+## Этап 5. PlantUML, PNG и ASCII
+
+Нужны Java и [PlantUML JAR](https://github.com/plantuml/plantuml/releases).
+Положите JAR в `tools/plantuml.jar` или укажите путь в переменной
+окружения `PLANTUML_JAR`. Встроенный движок Smetana компонует граф.
+
+```powershell
+New-Item -ItemType Directory -Path tools -Force | Out-Null
+Invoke-WebRequest -Uri https://github.com/plantuml/plantuml/releases/download/v1.2026.10/plantuml-java8-1.2026.10.jar -OutFile tools/plantuml.jar
+.\run.bat examples/alpine.toml
+.\run.bat examples/jq.toml
+.\run.bat examples/zlib.toml
+```
+
+Для `curl`, `jq` и `zlib` создаются файлы PNG и PlantUML в папке `output/`.
+При `ascii_tree = true` в терминале также выводится дерево с отметками
+циклов и общих зависимостей. Для проверки без интернета используйте
+`.\run.bat examples/test.toml`.
+
+Штатный `apk dot` используется отдельно для сверки. Результаты приведены
+в [отчёте о сравнении](docs/comparison.md).
+
+### Функции
+
+- `load_config` читает TOML, `require` и `validate_url` проверяют параметры.
+- `load_apk` загружает индекс. `index_url` строит ссылку, `read_index` читает
+  архив, `package_records` разбирает записи.
+- `parse_dependency` разделяет имя и ограничение, `version_key` и `matches`
+  проверяют версии. `ApkRepository.resolve` выбирает пакет, а
+  `ApkRepository.direct` возвращает прямые зависимости.
+- `load_test_graph` читает JSON с проверкой повтора ключей через `unique_keys`.
+  `dependency_source` подключает тестовый граф или Alpine.
+- `build_graph` строит граф итеративным DFS.
+- `plantuml_text` строит диаграмму, `render_png` запускает PlantUML,
+  `save_graph` записывает исходник и изображение. `ascii_tree` строит дерево.
+- `main` читает параметры запуска, `run_stage` выбирает операцию,
+  `print_config` показывает настройки первого этапа.
+
+Анализ охватывает один индекс APK v2. Программа разрешает зависимости
+и виртуальные имена из этого индекса. Штатный решатель APK дополнительно
+учитывает состояние системы, конфликты и правила автоматической установки.

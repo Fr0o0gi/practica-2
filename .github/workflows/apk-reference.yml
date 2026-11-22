@@ -1,0 +1,41 @@
+name: Compare with Alpine apk
+
+on:
+  push:
+    branches: [variant23]
+    paths:
+      - .github/workflows/apk-reference.yml
+      - scripts/apk-reference.sh
+
+permissions:
+  contents: read
+
+jobs:
+  alpine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Print native APK graphs
+        run: |
+          log="$RUNNER_TEMP/apk-reference.txt"
+          status=0
+          docker run --rm -v "$PWD:/project:ro" -w /project alpine:3.22 \
+            sh scripts/apk-reference.sh >"$log" 2>&1 || status=$?
+          {
+            printf '### Alpine APK reference\n\n'
+            printf '~~~text\n'
+            cat "$log"
+            printf '~~~\n'
+          } >>"$GITHUB_STEP_SUMMARY"
+          python3 - "$log" <<'PY'
+          import pathlib
+          import sys
+
+          log = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
+          chunk_size = 2000
+          for index, start in enumerate(range(0, len(log), chunk_size), 1):
+              detail = log[start:start + chunk_size]
+              detail = detail.replace("%", "%25").replace("\n", "%0A")
+              print(f"::notice title=Alpine APK reference {index:03}::{detail}")
+          PY
+          exit "$status"

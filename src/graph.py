@@ -24,7 +24,7 @@ def load_test_graph(path):
     graph = {}
     for name, dependencies in raw.items():
         if not TEST_NAME.fullmatch(name) or not isinstance(dependencies, list):
-            raise ValueError(f"{name!r}: нужен пакет A–Z со списком зависимостей")
+            raise ValueError(f"{name!r}: нужен пакет A–Z и список зависимостей")
         for dependency in dependencies:
             if not isinstance(dependency, str) or dependency not in raw:
                 raise ValueError(f"{name!r}: неизвестный пакет {dependency!r}")

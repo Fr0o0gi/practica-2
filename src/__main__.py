@@ -4,6 +4,7 @@ from pathlib import Path
 
 from .config import load_config
 from .graph import build_graph, dependency_source
+from .visualize import ascii_tree, save_graph
 
 
 def print_config(config):
@@ -13,7 +14,7 @@ def print_config(config):
 
 
 def run_stage(config, stage):
-    """Запускает проверку настроек, сбор или обход графа."""
+    """Запускает проверку настроек, сбор, обход или визуализацию."""
     if stage == 1:
         print_config(config)
         return
@@ -26,6 +27,13 @@ def run_stage(config, stage):
             print(name)
         return
     graph = build_graph(config.package, direct, config.max_depth)
+    if stage == 5:
+        source = save_graph(config, graph)
+        print(f"PlantUML: {source}")
+        print(f"PNG: {config.output}")
+        if config.ascii_tree:
+            print(ascii_tree(graph, config.package))
+        return
     for name, dependencies in graph.items():
         print(f"{name}: {', '.join(dependencies) or '—'}")
 
@@ -34,7 +42,7 @@ def main():
     """Принимает путь к настройкам и запускает выбранный этап."""
     parser = argparse.ArgumentParser(description="Граф зависимостей Alpine APK")
     parser.add_argument("config", type=Path, help="файл настроек TOML")
-    parser.add_argument("--stage", type=int, choices=(1, 2, 3), default=3)
+    parser.add_argument("--stage", type=int, choices=(1, 2, 3, 5), default=5)
     args = parser.parse_args()
     try:
         run_stage(load_config(args.config), args.stage)
