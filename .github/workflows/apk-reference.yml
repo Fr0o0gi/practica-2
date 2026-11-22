@@ -14,8 +14,22 @@ jobs:
   alpine:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Print native APK download order and graphs
-        run: >
-          docker run --rm -v "$PWD:/project:ro" -w /project alpine:3.22
-          sh scripts/apk-reference.sh
+        run: |
+          log="$RUNNER_TEMP/apk-reference.txt"
+          status=0
+          docker run --rm -v "$PWD:/project:ro" -w /project alpine:3.22 \
+            sh scripts/apk-reference.sh >"$log" 2>&1 || status=$?
+          {
+            printf '### Alpine APK reference\n\n'
+            printf '~~~text\n'
+            cat "$log"
+            printf '~~~\n'
+          } >>"$GITHUB_STEP_SUMMARY"
+          detail="$(cat "$log")"
+          detail="${detail//%/%25}"
+          detail="${detail//$'\r'/%0D}"
+          detail="${detail//$'\n'/%0A}"
+          printf '::notice title=Alpine APK reference::%s\n' "$detail"
+          exit "$status"
