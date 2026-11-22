@@ -27,9 +27,15 @@ jobs:
             cat "$log"
             printf '~~~\n'
           } >>"$GITHUB_STEP_SUMMARY"
-          detail="$(cat "$log")"
-          detail="${detail//%/%25}"
-          detail="${detail//$'\r'/%0D}"
-          detail="${detail//$'\n'/%0A}"
-          printf '::notice title=Alpine APK reference::%s\n' "$detail"
+          python3 - "$log" <<'PY'
+          import pathlib
+          import sys
+
+          log = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
+          chunk_size = 2000
+          for index, start in enumerate(range(0, len(log), chunk_size), 1):
+              detail = log[start:start + chunk_size]
+              detail = detail.replace("%", "%25").replace("\n", "%0A")
+              print(f"::notice title=Alpine APK reference {index:03}::{detail}")
+          PY
           exit "$status"
