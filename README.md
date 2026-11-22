@@ -69,7 +69,8 @@
 
 Штатный `apk` используется отдельно для сравнения. Скрипт
 `scripts/apk-reference.sh` запускается в Alpine 3.22 и печатает список
-`apk fetch -R --url` и граф `apk dot` для каждого пакета.
+`apk fetch -R --url` и граф `apk dot` для каждого пакета. Результаты для обоих
+этапов приведены в [отчёте о сравнении](docs/comparison.md).
 
 ## Этап 5. PlantUML, PNG и ASCII
 
@@ -90,15 +91,22 @@ Invoke-WebRequest -Uri https://github.com/plantuml/plantuml/releases/download/v1
 в терминале также выводится дерево с отметками циклов и общих зависимостей.
 Для локального графа без сети запустите `.un.bat examples/test.toml`.
 
-### Основные функции
+### Функции
 
-- `load_config` читает и проверяет настройки TOML.
-- `load_apk` загружает индекс, `ApkRepository.direct` находит зависимости.
-- `load_test_graph` читает тестовый граф из JSON.
+- `load_config` читает TOML, `require` и `validate_url` проверяют параметры.
+- `load_apk` загружает индекс. `index_url` строит ссылку, `read_index` читает
+  архив, `package_records` разбирает записи.
+- `parse_dependency` разделяет имя и ограничение, `version_key` и `matches`
+  проверяют версии. `ApkRepository.resolve` выбирает пакет, а
+  `ApkRepository.direct` возвращает прямые зависимости.
+- `load_test_graph` читает JSON с проверкой повтора ключей через `unique_keys`.
+  `dependency_source` подключает тестовый граф или Alpine.
 - `build_graph` строит граф итеративным DFS, `download_order` упорядочивает
   вершины после обхода зависимостей.
-- `plantuml_text` строит диаграмму, `save_graph` записывает исходник и PNG.
-- `ascii_tree` строит текстовое дерево.
+- `plantuml_text` строит диаграмму, `render_png` запускает PlantUML,
+  `save_graph` записывает исходник и изображение. `ascii_tree` строит дерево.
+- `main` читает параметры запуска, `run_stage` выбирает операцию,
+  `print_config` показывает настройки первого этапа.
 
 Анализ охватывает один индекс APK v2. Программа разрешает зависимости
 и виртуальные имена из этого индекса. Штатный решатель APK дополнительно
