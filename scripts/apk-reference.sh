@@ -1,8 +1,9 @@
 #!/bin/sh
 set -eu
 
-repositories="$(mktemp)"
-trap 'rm -f "$repositories"' EXIT
+work="$(mktemp -d)"
+repositories="$work/repositories"
+trap 'rm -rf "$work"' EXIT
 printf '%s\n' 'https://dl-cdn.alpinelinux.org/alpine/v3.22/main' \
     > "$repositories"
 
@@ -13,7 +14,8 @@ reference() {
 apk --version
 for package in curl jq zlib; do
     printf '\n=== FETCH %s ===\n' "$package"
-    reference fetch -R --url "$package"
+    mkdir "$work/$package"
+    reference fetch -R --url -o "$work/$package" "$package"
     printf '\n=== GRAPH %s ===\n' "$package"
     reference dot "$package"
 done
