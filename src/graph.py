@@ -62,3 +62,26 @@ def build_graph(root, direct, max_depth):
         graph[name] = dependencies
         stack.extend((child, depth + 1) for child in reversed(dependencies))
     return graph
+
+
+def download_order(graph, root):
+    """Кладёт зависимости раньше узла и отмечает рёбра цикла."""
+    stack = [(root, iter(graph[root]))]
+    active = {root}
+    finished = set()
+    order = []
+    cycles = []
+    while stack:
+        node, children = stack[-1]
+        child = next(children, None)
+        if child is None:
+            stack.pop()
+            active.remove(node)
+            finished.add(node)
+            order.append(node)
+        elif child in active:
+            cycles.append((node, child))
+        elif child not in finished:
+            active.add(child)
+            stack.append((child, iter(graph[child])))
+    return order, cycles

@@ -1,0 +1,21 @@
+name: Compare with Alpine apk
+
+on:
+  push:
+    branches: [codex/variant23]
+    paths:
+      - .github/workflows/apk-reference.yml
+      - scripts/apk-reference.sh
+
+permissions:
+  contents: read
+
+jobs:
+  alpine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print native APK download order and graphs
+        run: >
+          docker run --rm -v "$PWD:/project:ro" -w /project alpine:3.22
+          sh scripts/apk-reference.sh
