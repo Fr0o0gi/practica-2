@@ -2,8 +2,8 @@ import argparse
 from dataclasses import fields
 from pathlib import Path
 
-from .apk import load_apk
 from .config import load_config
+from .graph import build_graph, dependency_source
 
 
 def print_config(config):
@@ -12,23 +12,32 @@ def print_config(config):
         print(f"{field.name}={getattr(config, field.name)}")
 
 
+def run_stage(config, stage):
+    """Запускает проверку настроек, сбор или обход графа."""
+    if stage == 1:
+        print_config(config)
+        return
+    if stage == 2 and config.test_mode:
+        raise ValueError("этап 2 использует реальный APKINDEX")
+    direct = dependency_source(config)
+    if stage == 2:
+        print(f"Прямые зависимости {config.package}:")
+        for name in direct(config.package):
+            print(name)
+        return
+    graph = build_graph(config.package, direct, config.max_depth)
+    for name, dependencies in graph.items():
+        print(f"{name}: {', '.join(dependencies) or '—'}")
+
+
 def main():
     """Принимает путь к настройкам и запускает выбранный этап."""
     parser = argparse.ArgumentParser(description="Граф зависимостей Alpine APK")
     parser.add_argument("config", type=Path, help="файл настроек TOML")
-    parser.add_argument("--stage", type=int, choices=(1, 2), default=2)
+    parser.add_argument("--stage", type=int, choices=(1, 2, 3), default=3)
     args = parser.parse_args()
     try:
-        config = load_config(args.config)
-        if args.stage == 1:
-            print_config(config)
-        else:
-            if config.test_mode:
-                raise ValueError("этап 2 использует реальный APKINDEX")
-            repository = load_apk(config.repository)
-            print(f"Прямые зависимости {config.package}:")
-            for name in repository.direct(config.package):
-                print(name)
+        run_stage(load_config(args.config), args.stage)
     except (OSError, ValueError) as error:
         parser.error(str(error))
 

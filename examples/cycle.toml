@@ -1,0 +1,6 @@
+package = "A"
+repository = "cycle.json"
+test_mode = true
+output = "../output/cycle.png"
+ascii_tree = true
+max_depth = 5
